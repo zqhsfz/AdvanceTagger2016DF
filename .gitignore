@@ -1,0 +1,6 @@
+.asetup.save
+InstallArea/
+WorkArea/
+PhysicsAnalysis/
+Reconstruction/
+run/local/
