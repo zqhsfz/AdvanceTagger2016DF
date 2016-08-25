@@ -73,6 +73,7 @@ namespace Analysis {
     // repeating k-means adaptively to remove outliers
     KmeansElement                     AdaptiveKmeans(const xAOD::Vertex* primaryVertex, std::vector<const xAOD::Vertex*> & inputVtxList, std::vector<KmeansElement> & history, std::vector<std::vector<KmeansElement> > & detailHistory, std::vector<Amg::Vector3D> ClusterSeeds) const;
     // core k-means part
+    std::vector<Amg::Vector3D>        InitializeKmeans(const xAOD::Vertex* primaryVertex, std::vector<const xAOD::Vertex*> inputVtxList, std::vector<Amg::Vector3D> ClusterSeeds, bool doKmeansPP = true) const;
     KmeansElement                     SimpleKmeans(const xAOD::Vertex* primaryVertex, const std::vector<const xAOD::Vertex*> & inputVtxList, std::vector<KmeansElement> & ClusHistory, std::vector<Amg::Vector3D> ClusterSeeds) const;
 
     // kernel clustering calculation //

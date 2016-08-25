@@ -164,7 +164,7 @@ def buildKmeansSubjets(JetCollectionName, nsubjet, recordNameAppendix = "", Tool
     from JetTagTools.JetTagToolsConf import Analysis__KmeansbbTagTool
     KmeansbbTagToolInstance = Analysis__KmeansbbTagTool(
       name = "KmeansbbTagTool%i%s_%s" % (nsubjet, recordNameAppendix, JetCollectionName),
-      Debug = False, # True,
+      Debug = False,
       PrimaryVertexContainerName = "PrimaryVertices",
       nAxis = nsubjet,
       SubjetLabel = "ExKt2SubJets", # -- hard-coded, since we want to make sure inputs are the same for all variaitons #  ( "ExKt%iSubJets" % (nsubjet) if nsubjet != 1 else "" ),

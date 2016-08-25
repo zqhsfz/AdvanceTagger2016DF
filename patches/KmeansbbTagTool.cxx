@@ -9,6 +9,7 @@
 
 #include "TMVA/Reader.h"
 
+
 namespace Analysis {
 
 /** 
@@ -428,11 +429,98 @@ KmeansElement KmeansbbTagTool::AdaptiveKmeans(const xAOD::Vertex* primaryVertex,
   return empty;
 }
 
+// assuming input size is not smaller than k
+// The protection should be done in wherever that calls this function
+// We also do not check the sanity of output here (if it is same as k). This should be done at where calls this function
+// inputVtxList must NOT pass in by reference, since there is erasing operation on it.
+std::vector<Amg::Vector3D> KmeansbbTagTool::InitializeKmeans(const xAOD::Vertex* primaryVertex, std::vector<const xAOD::Vertex*> inputVtxList, std::vector<Amg::Vector3D> ClusterSeeds, bool doKmeansPP) const{
+  if(ClusterSeeds.size() != 0){
+    return ClusterSeeds;
+  }
+
+  std::vector<Amg::Vector3D> output;
+
+  if(doKmeansPP){
+    // Kmeans++ initialization
+    std::default_random_engine generator;
+
+    std::vector<const xAOD::Vertex*> chosenVertices;
+
+    std::vector<double> weights(inputVtxList.size());
+    for(unsigned int index = 0; index < weights.size(); index++) weights[index] = 1.;
+
+    int counter = 0;
+    while(int(output.size()) < m_nAxis){
+      // protection against infinite loop
+      counter++;
+      if(counter > (m_nAxis * 2)){
+        ATH_MSG_ERROR("Potential infinite loop during k-means++ initialization! This should not happen. Program will still proceed, but you should check what is going on!");
+        break;
+      }
+
+      // randomly choose a vtx according to weight
+      std::discrete_distribution<int> distribution(weights.begin(), weights.end());
+      int chosenIndex = distribution(generator);
+      const xAOD::Vertex* chosenVtx = inputVtxList[chosenIndex];
+
+      // push back
+      if(std::find(chosenVertices.begin(), chosenVertices.end(), chosenVtx) == chosenVertices.end()){
+        chosenVertices.push_back(chosenVtx);
+        output.push_back(chosenVtx->position() - primaryVertex->position());
+      }
+      else{
+        ATH_MSG_ERROR("Duplicate vertex chosen during k-means++. This should not happen. Program will still proceed, but you should check what is going on!");
+        continue;
+      }
+
+      // erase chosen one
+      // By definition of k-means++, this is not necessary, since the weight for chosen one will be 0.
+      // However, to prevent numerical errors, we would simply remove chosen items from the input list
+      inputVtxList.erase(inputVtxList.begin() + chosenIndex);
+      weights.erase(weights.begin() + chosenIndex);
+
+      // calculate new weights
+      for(unsigned int index = 0; index < inputVtxList.size(); index++){
+        auto vtx = inputVtxList[index];
+        
+        int assignIndex__temporary = HardAssignment(primaryVertex, vtx, output);
+        std::vector<const xAOD::Vertex*> inputVtxList__temporary { vtx };
+
+        double newWeight = GetChisquare(primaryVertex, output[assignIndex__temporary], inputVtxList__temporary);
+        if(newWeight < 0.){
+          ATH_MSG_ERROR("Negative chi-square obtained during k-means++. This should not happend. Program will still proceed by setting it to 0, but you should check what is going on!");
+          newWeight = 0.;
+        }
+        weights[index] = newWeight;
+      }
+    }
+  }
+  else{
+    // Random initialization
+    for(int iclass = 0; iclass < m_nAxis; iclass++){
+      int random_index = random() % (inputVtxList.size());
+
+      const xAOD::Vertex* random_vtx = inputVtxList[random_index];
+      Amg::Vector3D random_axis = random_vtx->position() - primaryVertex->position();
+      output.push_back(random_axis);
+
+      inputVtxList.erase(inputVtxList.begin() + random_index);
+    }
+  }
+
+  return output;
+}
+
 KmeansElement KmeansbbTagTool::SimpleKmeans(const xAOD::Vertex* primaryVertex, const std::vector<const xAOD::Vertex*> & inputVtxList, std::vector<KmeansElement> & ClusHistory, std::vector<Amg::Vector3D> ClusterSeeds) const{
   KmeansElement empty;
 
   // should have enough input for clustering //
-  if((int)(inputVtxList.size()) < m_nAxis) return empty;
+  if((int)(inputVtxList.size()) < m_nAxis){
+    if(m_debug){
+      ATH_MSG_WARNING("Number of input vertices less than number of requested clusters: " << inputVtxList.size() << " / " << m_nAxis);
+    }
+    return empty;
+  }
 
   // initialization //
   KmeansElement output;
@@ -440,27 +528,18 @@ KmeansElement KmeansbbTagTool::SimpleKmeans(const xAOD::Vertex* primaryVertex, c
   output.class_axis.clear();
   output.class_chisquare.clear();
 
-  // initial (random) assignment //
-  std::vector<const xAOD::Vertex*> inputVtxList_copy = inputVtxList;
+  // Initialization //
+  // k-means++ is turned on automatically, since this is already a pretty standard thing nowadays
+  output.class_axis = InitializeKmeans(primaryVertex, inputVtxList, ClusterSeeds, true);
+  if(int(output.class_axis.size()) != m_nAxis){
+    ATH_MSG_ERROR("Size of seeds not equal to number of requested clusters: " << output.class_axis.size() << " / " << m_nAxis);
+    return empty;
+  }
   for(int iclass = 0; iclass < m_nAxis; iclass++){
-    int random_index = random() % (inputVtxList_copy.size());
-
-    Amg::Vector3D random_axis;
-
-    if(ClusterSeeds.size() == 0){
-      const xAOD::Vertex* random_vtx = inputVtxList_copy[random_index];
-      random_axis = random_vtx->position() - primaryVertex->position();
-    }
-    else{
-      random_axis = ClusterSeeds[iclass];
-    }
-
-    output.class_axis.push_back(random_axis);
     output.class_chisquare.push_back(-1.);
+
     std::vector<const xAOD::Vertex*> dummyVtxList; 
     output.class_vtxList.push_back(dummyVtxList);
-
-    inputVtxList_copy.erase(inputVtxList_copy.begin() + random_index);
   }
 
   // start k-means clustering //
