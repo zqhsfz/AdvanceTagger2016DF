@@ -11,4 +11,4 @@ pathena \
 --nFiles 10 \
 --nEventsPerJob=1000 \
 --inDS mc15_13TeV.301503.MadGraphPythia8EvtGen_A14NNPDF23LO_RS_G_hh_bbbb_c10_M2000.merge.AOD.e3820_s2608_s2183_r7772_r7676 \
---outDS user.qzeng.mc15_13TeV.301503.RS_G_hh_bbbb_c10_M2000.DAOD_FTAG5.e3820_s2608_s2183_r7772_r7676.test1 \
+--outDS user.qzeng.mc15_13TeV.301503.RS_G_hh_bbbb_c10_M2000.DAOD_FTAG5.e3820_s2608_s2183_r7772_r7676.test2 \

@@ -572,10 +572,12 @@ KmeansElement KmeansbbTagTool::SimpleKmeans(const xAOD::Vertex* primaryVertex, c
       output.class_vtxList[index_assignment].push_back(vtx_current);
     }
 
-    // check if any cluster is empty, which is disallowed (otherwise it would carsh)
+    // check if any cluster is empty. If so, then the old centroid would be used as placeholder
+    std::vector<int> emptyClusterList;
     for(int iclass = 0; iclass < m_nAxis; iclass++){
       if(output.class_vtxList[iclass].size() == 0){
-        ATH_MSG_ERROR("Empty cluster found! You will crash very soon ...");
+        ATH_MSG_WARNING("Empty cluster found! Centroid from last iteration would be used");
+        emptyClusterList.push_back(iclass);
       }
     }
 
@@ -585,7 +587,14 @@ KmeansElement KmeansbbTagTool::SimpleKmeans(const xAOD::Vertex* primaryVertex, c
     // update axis
     double sum_chisquare = 0.;
     for(unsigned int iclass = 0; iclass < output.class_vtxList.size(); iclass++){
-      Amg::Vector3D new_axis = UpdateAxis(primaryVertex, output.class_vtxList[iclass]);
+      Amg::Vector3D new_axis;
+      if(std::find(emptyClusterList.begin(), emptyClusterList.end(), iclass) == emptyClusterList.end()){
+        new_axis = UpdateAxis(primaryVertex, output.class_vtxList[iclass]);
+      }
+      else{
+        new_axis = ClusHistory.back().class_axis[iclass];
+      }
+      
       output.class_axis[iclass] = new_axis;
       output.class_chisquare[iclass] = GetChisquare(primaryVertex, new_axis, output.class_vtxList[iclass]);
       sum_chisquare += output.class_chisquare[iclass];
