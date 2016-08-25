@@ -104,6 +104,10 @@ int KmeansbbTagTool::modifyJet(xAOD::Jet& jetToTag) const{
   jetToTag.auxdata<std::string>(m_recordSubjetLabel + "_ContainerName") = m_recordSubjetContainerName;
   jetToTag.auxdata<std::vector<int> >(m_recordSubjetLabel + "_IndexList") = v_subjet_index__dummy;
 
+  // set dummy association to input vertices
+  std::vector<const xAOD::Vertex*> v_inputVtxList__dummy;
+  jetToTag.setAssociatedObjects("Kmeans_inputVtxList", v_inputVtxList__dummy);
+
   ////////////////////////
   // Get Primary Vertex //
   ////////////////////////
@@ -152,13 +156,15 @@ int KmeansbbTagTool::modifyJet(xAOD::Jet& jetToTag) const{
   ///////////////////////////////////
 
   std::vector<const xAOD::Vertex*> selectInputVtxList = InputVtxCleaning(m_priVtx, jetToTag, rawInputVtxList);
+  jetToTag.setAssociatedObjects("Kmeans_inputVtxList", selectInputVtxList);
 
   // sanity check
   if(int(selectInputVtxList.size()) < m_nAxis){
     if(m_debug){
       ATH_MSG_WARNING("Impossible to run k-means: Number of input vertices less than number of requested clusters. Before cleaning: " << rawInputVtxList.size() << " ; After cleaning: " << selectInputVtxList.size());
-      return 0;
     }
+
+    return 0;
   }
 
   ////////////////////////////////
@@ -260,9 +266,10 @@ int KmeansbbTagTool::modifyJet(xAOD::Jet& jetToTag) const{
   jetToTag.auxdata<std::string>(m_recordSubjetLabel + "_ContainerName") = m_recordSubjetContainerName;
   jetToTag.auxdata<std::vector<int> >(m_recordSubjetLabel + "_IndexList") = v_subjet_index;
 
-  // temporary debug
-  DumpKmeansElement(m_priVtx, jetToTag, history[0], "Initial");
-  DumpKmeansElement(m_priVtx, jetToTag, result_kmeans, "Final");
+  if(m_debug){
+   DumpKmeansElement(m_priVtx, jetToTag, history[0], "Initial");
+   DumpKmeansElement(m_priVtx, jetToTag, result_kmeans, "Final");
+  }
 
   return StatusCode::SUCCESS;
 }

@@ -1,0 +1,14 @@
+pathena \
+--useNewTRF \
+--trf "Reco_tf.py \
+--preExec 'rec.doApplyAODFix.set_Value_and_Lock(True);from BTagging.BTaggingFlags import BTaggingFlags;BTaggingFlags.CalibrationTag = \"BTagCalibRUN12-08-18\"' \
+--reductionConf FTAG5 \
+--maxEvents '1000' \
+--skipEvents %SKIPEVENTS \
+--inputAODFile=%IN \
+--outputDAODFile %OUT.DAOD_FTAG5.pool.root" \
+--skipScout \
+--nFiles 10 \
+--nEventsPerJob=1000 \
+--inDS mc15_13TeV.301503.MadGraphPythia8EvtGen_A14NNPDF23LO_RS_G_hh_bbbb_c10_M2000.merge.AOD.e3820_s2608_s2183_r7772_r7676 \
+--outDS user.qzeng.mc15_13TeV.301503.RS_G_hh_bbbb_c10_M2000.DAOD_FTAG5.e3820_s2608_s2183_r7772_r7676.test1 \
