@@ -260,6 +260,9 @@ int KmeansbbTagTool::modifyJet(xAOD::Jet& jetToTag) const{
     }
     subjet->setAttribute("Kmeans_AssocVertices", v_el_vtx);
     subjet->setAttribute("Kmeans_AssocTracks", v_el_tracks);
+
+    // set chi-square information
+    subjet->setAttribute("Kmeans_Chi2", result_kmeans.class_chisquare[iclass]);
   }
 
   // set association to subjets
@@ -380,6 +383,9 @@ KmeansElement KmeansbbTagTool::AdaptiveKmeans(const xAOD::Vertex* primaryVertex,
     const xAOD::Vertex* vtx_outlier = 0;
     double largest_chisquare = -1.;
 
+    // touch
+    std::cout << "Iteration " << count << std::endl;
+    std::vector<double> chisquare_list;
     for(unsigned int iclass = 0; iclass < result_onekmeans.class_vtxList.size(); iclass++){
       Amg::Vector3D                     axis    = result_onekmeans.class_axis[iclass];
       std::vector<const xAOD::Vertex*>  vtxList = result_onekmeans.class_vtxList[iclass];
@@ -393,12 +399,45 @@ KmeansElement KmeansbbTagTool::AdaptiveKmeans(const xAOD::Vertex* primaryVertex,
           std::cout << "vtx " << "(" << vtx->position()(0) << "," << vtx->position()(1) << "," << vtx->position()(2) << ")" << " has chi-square " << chisquare << " w.r.t axis " << "(" << axis(0) << "," << axis(1) << "," << axis(2) << ")" << std::endl;
         }
 
+        // R&D debug
+        // touch
+        chisquare_list.push_back(chisquare);
+
         if( (chisquare > m_MaxChi2) && (chisquare > largest_chisquare) ){
           vtx_outlier = vtx;
           largest_chisquare = chisquare;
         }
       }
     }
+
+    // touch
+    std::sort(chisquare_list.begin(), chisquare_list.end());
+    for(auto item : chisquare_list) std::cout << item << " ";
+    std::cout << " | " << std::accumulate(chisquare_list.begin(), chisquare_list.end(), 0.);
+
+    // get inter-quatile
+    double median = TMath::Median<double>(chisquare_list.size(), &chisquare_list[0]);
+    std::vector<double> chisquare_list_lower;
+    std::vector<double> chisquare_list_upper;
+    for(auto chisquare : chisquare_list){
+      if(chisquare < median){
+        chisquare_list_lower.push_back(chisquare);
+      }
+      else if(chisquare > median){
+        chisquare_list_upper.push_back(chisquare);
+      }
+      else{
+        continue;
+      }
+    }
+    double Q1 = TMath::Median<double>(chisquare_list_lower.size(), &chisquare_list_lower[0]);
+    double Q3 = TMath::Median<double>(chisquare_list_upper.size(), &chisquare_list_upper[0]);
+    double IQR = Q3 - Q1;
+    double threshold = Q3 + 1.5 * IQR;
+    double threshold2 = Q3 + 1.0 * IQR;
+    double threshold3 = Q3 + 0.5 * IQR;
+    std::cout << " | " << threshold << " | " << threshold2 << " | " << threshold3 << std::endl;
+
 
     if(m_debug){
       std::cout << "Checking DONE" << std::endl;

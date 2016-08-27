@@ -22,6 +22,8 @@ cp patches/JetTagTools_entries.cxx PhysicsAnalysis/JetTagging/JetTagTools/src/co
 cp patches/requirements PhysicsAnalysis/JetTagging/JetTagTools/cmt
 
 cp patches/BTaggingConfiguration_LoadTools.py PhysicsAnalysis/JetTagging/JetTagAlgs/BTagging/python
+cp patches/BTagSecVertexing.cxx PhysicsAnalysis/JetTagging/JetTagAlgs/BTagging/src
+cp patches/BTagSecVertexing.h PhysicsAnalysis/JetTagging/JetTagAlgs/BTagging/BTagging
 
 cp patches/ParticleToJetAssociator.cxx PhysicsAnalysis/AnalysisCommon/ParticleJetTools/Root
 cp patches/ParticleToJetAssociator.h PhysicsAnalysis/AnalysisCommon/ParticleJetTools/ParticleJetTools
